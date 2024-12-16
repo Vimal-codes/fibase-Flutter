@@ -1,3 +1,4 @@
+import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -12,8 +13,33 @@ class RegisterPage extends StatefulWidget {
 
 class _RegisterPageState extends State<RegisterPage> {
   final _formKey = GlobalKey<FormState>();
+  final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+
+  final DatabaseReference _databaseReference = FirebaseDatabase.instance.ref();
+
+  int id = 1;
+  void updateId(){
+    setState(() {
+      id++;
+    });
+}
+
+
+  Future<bool> save(
+      String uid, String name, String phone, String email, String pass) async {
+    try {
+      await _databaseReference.child("users/$uid").set(
+          {'name': name, 'phone': phone, 'email': email, 'password': pass});
+      updateId();
+      return true;
+    } catch (e) {
+      print(e);
+      return false;
+    }
+  }
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
@@ -57,6 +83,21 @@ class _RegisterPageState extends State<RegisterPage> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               TextFormField(
+                controller: _nameController,
+                keyboardType: TextInputType.name,
+                decoration: const InputDecoration(
+                  labelText: 'Name',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter your Name';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 20),
+              TextFormField(
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
                 decoration: const InputDecoration(
@@ -66,6 +107,21 @@ class _RegisterPageState extends State<RegisterPage> {
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'Please enter your email';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 20),
+              TextFormField(
+                controller: _phoneController,
+                keyboardType: TextInputType.phone,
+                decoration: const InputDecoration(
+                  labelText: 'Phone',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter your number';
                   }
                   return null;
                 },
@@ -89,7 +145,23 @@ class _RegisterPageState extends State<RegisterPage> {
               ),
               const SizedBox(height: 20),
               ElevatedButton(
-                onPressed: _register,
+                onPressed: () {
+                  _register();
+                  save(
+                          "ID:$id",
+                          _nameController.text,
+                          _phoneController.text,
+                          _emailController.text,
+                          _passwordController.text)
+                      .then((value) {
+                    if (value) {
+                      _emailController.clear();
+                      _nameController.clear();
+                      _phoneController.clear();
+                      _passwordController.clear();
+                    }
+                  });
+                },
                 child: const Text('Register'),
               ),
             ],
